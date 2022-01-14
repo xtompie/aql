@@ -89,7 +89,7 @@ class AQL
             }
 
             // key and comparison
-            list ($key, $comparison) = preg_split('/:\s/', $key, 2);
+            [$key, $comparison] = array_pad(preg_split('/[:\s]/', $key, 2), 2, null);
             $key = $key[0] === '|' ? substr($key, 1) : "`$key`";
             $comparison = $comparison !== null ? $comparison : '=';
 
@@ -220,12 +220,12 @@ class AQL
         return ' GROUP BY ' . (is_array($group) ? implode(' ', $group) : $group);
     }
 
-    protected function having(array|null $having, callable $escaper): string
+    protected function having(array|string|null $having, callable $escaper): string
     {
         if ($having === null) {
             return '';
         }
-        return ' HAVING ' . $this->condition($having, $escaper);
+        return ' HAVING ' . (is_string($having) ? $having : $this->condition($having, $escaper));
     }
 
     protected function order(array|string|null $order): string

@@ -122,13 +122,45 @@ class AQLTest extends TestCase
         );
     }
 
-    // public function test_having2()
-    // {
-    //     $this->testQuery(
-    //         "HAVING post_id > 0",
-    //         ['having' => ['post_id >' =>  '0']],
-    //     );
-    // }
+    public function test_having2()
+    {
+        $this->testQuery(
+            "HAVING `post_id` > '0'",
+            ['having' => ['post_id >' =>  '0']],
+        );
+    }
+
+    public function test_order()
+    {
+        $this->testQuery(
+            "ORDER BY created_at DESC",
+            ['order' => 'created_at DESC'],
+        );
+    }
+
+    public function test_offet()
+    {
+        $this->testQuery(
+            "OFFSET 100",
+            ['offset' => 100],
+        );
+    }
+
+    public function test_limit()
+    {
+        $this->testQuery(
+            "LIMIT 10",
+            ['limit' => 10],
+        );
+    }
+
+    public function test_offset_limit()
+    {
+        $this->testQuery(
+            "LIMIT 10 OFFSET 100",
+            ['offset' => 100, 'limit' => 10],
+        );
+    }
 }
 
  /**
