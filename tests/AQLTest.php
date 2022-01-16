@@ -12,7 +12,7 @@ class AQLTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->escaper = fn ($s) => addslashes($s);
+        $this->escaper = fn ($s) => addslashes((string)$s);
         $this->service = new AQL();
     }
 
@@ -161,18 +161,35 @@ class AQLTest extends TestCase
             ['offset' => 100, 'limit' => 10],
         );
     }
+
+    public function test_where_equal()
+    {
+        $this->testQuery(
+            "WHERE `post_level` = '1'",
+            ['where' => ['post_level' => 1]],
+        );
+    }
+
+    public function test_where_in()
+    {
+        $this->testQuery(
+            "WHERE `post_level` IN ('1','2','3')",
+            ['where' => ['post_level IN' => [1, 2, 3]]],
+        );
+    }
+    public function test_where_in2()
+    {
+        $this->testQuery(
+            "WHERE `post_level` IN ('1','2','3')",
+            ['where' => ['post_level:in' => [1, 2, 3]]],
+        );
+    }
 }
 
  /**
      * Builds fragmenet or full raw sql query
      *
      * $aql options:
-     * - 'group'  => 'post_id'
-     * - 'having' => 'post_id > 0'
-     * - 'having' => ['post_id >' =>  '0']
-     * - 'order'  => 'post_published DESC'
-     * - 'limit'  => 10,
-     * - 'offset' => 0,
      * - 'where' => []
      *   - 'post_level' => [1, 2, 3] // `post_level` IN ('1', '2', '3')
      *   - 'post_level BETWEEN' => [4, 5] // `post_level` BETWEEN '4' AND '5'

@@ -103,14 +103,31 @@ class AQL
                     break;
 
                 case 'IN':
+                case 'in':
                 case 'NOT IN':
+                case 'notin':
                     foreach ($value as $k => $v) {
                         $value[$k] = $escaper($v);
                     }
+                    $comparison = match($comparison) {
+                        'in' => 'IN',
+                        'notin' => 'NOT IN',
+                        default => $comparison,
+                    };
+
                     $sql[] = "$key $comparison ('" . implode("','", $value) . "')";
                     break;
-
                 default:
+                    $comparison = match($comparison) {
+                        'gt' => '>',
+                        'ge' => '>=',
+                        'lt' => '<',
+                        'le' => '<=',
+                        'not' => '!=',
+                        'like' => 'LIKE',
+                        default => $comparison,
+                    };
+
                     $sql[] = "$key $comparison '{$escaper($value)}'";
                     break;
 
