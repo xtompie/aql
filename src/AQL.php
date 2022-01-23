@@ -66,7 +66,8 @@ class AQL
 
         foreach ($condition as $key => $value) {
 
-            // <int> => [], <int> => '<raw sql>'
+            // <int> => [] - pa
+            // <int> => '<raw sql>'
             if (is_int($key)) {
                 $sql[] = is_array($value) ? '(' . $this->condition($value, $escaper) . ')' : $value;
                 continue;
@@ -76,7 +77,7 @@ class AQL
             if ($key[0] === '|' && is_array($value)) {
                 $key = substr($key, 1);
                 foreach ($value as $find => $replace) {
-                    $key = str_replace($find, $escaper($replace), $key);
+                    $key = str_replace($find, $this->value($replace, $escaper), $key);
                 }
                 $sql[] = $key;
                 continue;
@@ -93,46 +94,38 @@ class AQL
             $key = $key[0] === '|' ? substr($key, 1) : "`$key`";
             $comparison = $comparison !== null ? $comparison : '=';
 
-            switch ($comparison) {
+            // comparison alias
+            $comparison = match($comparison) {
+                'eq' => '=',
+                'gt' => '>',
+                'ge' => '>=',
+                'lt' => '<',
+                'le' => '<=',
+                'not' => '!=',
+                'neq' => '!=',
+                'like' => 'LIKE',
+                'in' => 'IN',
+                'notin' => 'NOT IN',
+                'between' => 'BETWEEN',
+                'notbetween' => 'NOT BETWEEN',
+                default => $comparison,
+            };
 
-                case 'BETWEEN':
-                case 'NOT BETWEEN':
-                    $sql[] = "$key $comparison"
-                             . " '{$escaper($value[0])}'"
-                             . " AND '{$escaper($value[1])}'";
-                    break;
-
-                case 'IN':
-                case 'in':
-                case 'NOT IN':
-                case 'notin':
-                    foreach ($value as $k => $v) {
-                        $value[$k] = $escaper($v);
-                    }
-                    $comparison = match($comparison) {
-                        'in' => 'IN',
-                        'notin' => 'NOT IN',
-                        default => $comparison,
-                    };
-
-                    $sql[] = "$key $comparison ('" . implode("','", $value) . "')";
-                    break;
-                default:
-                    $comparison = match($comparison) {
-                        'gt' => '>',
-                        'ge' => '>=',
-                        'lt' => '<',
-                        'le' => '<=',
-                        'not' => '!=',
-                        'like' => 'LIKE',
-                        default => $comparison,
-                    };
-
-                    $sql[] = "$key $comparison '{$escaper($value)}'";
-                    break;
-
+            // escape value
+            if (is_scalar($value)) {
+                $value = $this->value($value, $escaper);
+            }
+            else {
+                foreach ($value as $k => $v) {
+                    $value[$k] = $this->value($v, $escaper);
+                }
             }
 
+            $sql[] = match($comparison) {
+                'BETWEEN', 'NOT BETWEEN' => "$key $comparison {$value[0]} AND {$value[1]}",
+                'IN', 'NOT INT' => "$key $comparison (" . implode(",", $value) . ")",
+                default => "$key $comparison $value",
+            };
         }
 
         return implode($logical, $sql);
@@ -290,9 +283,19 @@ class AQL
 
         $sql = [];
         foreach ($set as $k => $v) {
-            $sql[$k] = "`$k` = '{$escaper($v)}'";
+            $sql[$k] = "`$k` = {$this->value($v, $escaper)}";
         }
 
         return ' SET ' . implode(', ', $sql);
+    }
+
+    protected function value(mixed $value, callable $escaper): string
+    {
+        if (is_null($value) || is_integer($value)) {
+            return (string)$escaper($value);
+        }
+        if (is_string($value)) {
+            return "'" . $escaper($value) . "'";
+        }
     }
 }
