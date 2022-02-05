@@ -196,7 +196,7 @@ class AqlService
         $this->condition($aql['where'], $build);
     }
 
-    protected function set(array $aql, AqlBuild $build): string
+    protected function set(array $aql, AqlBuild $build)
     {
         if (!isset($aql['set'])) {
             return '';

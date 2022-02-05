@@ -325,4 +325,17 @@ class AqlTest extends TestCase
             ['string']
         );
     }
+
+    public function test_set()
+    {
+        $this->aql(
+            ['set' => [
+                'post_level' => 'a',
+                '|time' => 'NOW()',
+            ]],
+            "SET `post_level` = ?, `time` = NOW()",
+            ['a'],
+            ['string']
+        );
+    }
 }
