@@ -40,10 +40,14 @@ class Aql
      * @param array $aql
      * @return string SQL statement
      */
-    public function query(array $aql, callable $escaper): string
+    public function __invoke(array $aql, callable $escaper): string
     {
         return trim(
             $this->select($aql['select'] ?? null, $aql['prefix'] ?? null, $escaper)
+            . $this->insert($aql['insert'] ?? null, $escaper)
+            . $this->update($aql['update'] ?? null, $escaper)
+            . $this->delete($aql['delete'] ?? null, $escaper)
+            . $this->set($aql['set'] ?? null, $escaper)
             . $this->from($aql['from'] ?? null, $escaper)
             . $this->join($aql['join'] ?? null)
             . $this->where($aql['where'] ?? null, $escaper)
@@ -55,7 +59,7 @@ class Aql
         );
     }
 
-    public function condition(array|null $condition, callable $escaper): string
+    protected function condition(array|null $condition, callable $escaper): string
     {
         if ($condition === null) {
             return '';
@@ -129,17 +133,6 @@ class Aql
         }
 
         return implode($logical, $sql);
-    }
-
-    public function command(array $aql, callable $escaper): string
-    {
-        return trim(
-            $this->insert($aql['insert'] ?? null, $escaper)
-            . $this->update($aql['update'] ?? null, $escaper)
-            . $this->delete($aql['delete'] ?? null, $escaper)
-            . $this->set($aql['set'] ?? null, $escaper)
-            . $this->where($aql['where'] ?? null, $escaper)
-        );
     }
 
     protected function insert(string|null $insert): string

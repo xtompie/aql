@@ -24,35 +24,20 @@ class AqlTest extends TestCase
         $this->service = new Aql();
     }
 
-    protected function test($sql, $aql, $mehtod)
+    protected function aql($sql, $aql)
     {
         // given
 
         // when
-        $result = $this->service->{$mehtod}($aql, $this->escaper);
+        $result = $this->service->__invoke($aql, $this->escaper);
 
         // then
         $this->assertSame($sql, $result);
     }
 
-    protected function testQuery($sql, $aql)
-    {
-        $this->test($sql, $aql, 'query');
-    }
-
-    protected function testCommand($sql, $aql)
-    {
-        $this->test($sql, $aql, 'query');
-    }
-
-    protected function testCondition($sql, $aql)
-    {
-        $this->test($sql, $aql, 'condition');
-    }
-
     public function test_select_raw()
     {
-        $this->testQuery(
+        $this->aql(
             "SELECT post_id, post_title as title",
             ["select" => "post_id, post_title as title"],
         );
@@ -60,7 +45,7 @@ class AqlTest extends TestCase
 
     public function test_select_array()
     {
-        $this->testQuery(
+        $this->aql(
             "SELECT `post_id`, `post_title` as 'title'",
             ["select" => ['post_id', 'title' => 'post_title']],
         );
@@ -68,7 +53,7 @@ class AqlTest extends TestCase
 
     public function test_select_escape()
     {
-        $this->testQuery(
+        $this->aql(
             "SELECT COUNT(*) as 'count'",
             ["select" => ['count' => '|COUNT(*)']],
         );
@@ -76,7 +61,7 @@ class AqlTest extends TestCase
 
     public function test_select_escape2()
     {
-        $this->testQuery(
+        $this->aql(
             "SELECT COUNT(*) as count",
             ["select" => ['|count' => '|COUNT(*)']],
         );
@@ -84,7 +69,7 @@ class AqlTest extends TestCase
 
     public function test_prefix()
     {
-        $this->testQuery(
+        $this->aql(
             "SELECT SQL_NO_CACHE DISTINCT",
             ["prefix" => 'SQL_NO_CACHE DISTINCT'],
         );
@@ -92,7 +77,7 @@ class AqlTest extends TestCase
 
     public function test_from_simple()
     {
-        $this->testQuery(
+        $this->aql(
             "FROM `order`",
             ["from" => 'order'],
         );
@@ -100,7 +85,7 @@ class AqlTest extends TestCase
 
     public function test_from_alias()
     {
-        $this->testQuery(
+        $this->aql(
             "FROM `posts` as 'p'",
             ["from" => ['p' => 'posts']],
         );
@@ -108,7 +93,7 @@ class AqlTest extends TestCase
 
     public function test_join()
     {
-        $this->testQuery(
+        $this->aql(
             "JOIN author ON (author_id = post_id_author) LEFT JOIN img ON (author_id_img = img_id)",
             ['join'  => ['JOIN author ON (author_id = post_id_author)', 'LEFT JOIN img ON (author_id_img = img_id)']],
         );
@@ -116,7 +101,7 @@ class AqlTest extends TestCase
 
     public function test_group()
     {
-        $this->testQuery(
+        $this->aql(
             "GROUP BY post_id",
             ['group'  => 'post_id'],
         );
@@ -124,7 +109,7 @@ class AqlTest extends TestCase
 
     public function test_having()
     {
-        $this->testQuery(
+        $this->aql(
             "HAVING post_id > 0",
             ['having' => 'post_id > 0'],
         );
@@ -132,7 +117,7 @@ class AqlTest extends TestCase
 
     public function test_having2()
     {
-        $this->testQuery(
+        $this->aql(
             "HAVING `post_id` > '0'",
             ['having' => ['post_id >' =>  '0']],
         );
@@ -140,7 +125,7 @@ class AqlTest extends TestCase
 
     public function test_order()
     {
-        $this->testQuery(
+        $this->aql(
             "ORDER BY created_at DESC",
             ['order' => 'created_at DESC'],
         );
@@ -148,7 +133,7 @@ class AqlTest extends TestCase
 
     public function test_offet()
     {
-        $this->testQuery(
+        $this->aql(
             "OFFSET 100",
             ['offset' => 100],
         );
@@ -156,7 +141,7 @@ class AqlTest extends TestCase
 
     public function test_limit()
     {
-        $this->testQuery(
+        $this->aql(
             "LIMIT 10",
             ['limit' => 10],
         );
@@ -164,7 +149,7 @@ class AqlTest extends TestCase
 
     public function test_offset_limit()
     {
-        $this->testQuery(
+        $this->aql(
             "LIMIT 10 OFFSET 100",
             ['offset' => 100, 'limit' => 10],
         );
@@ -172,7 +157,7 @@ class AqlTest extends TestCase
 
     public function test_equal()
     {
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` = 'a'",
             ['where' => ['post_level' => 'a']],
         );
@@ -180,7 +165,7 @@ class AqlTest extends TestCase
 
     public function test_in()
     {
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` IN ('a','b','c')",
             ['where' => ['post_level IN' => ['a','b','c']]],
         );
@@ -188,7 +173,7 @@ class AqlTest extends TestCase
 
     public function test_in2()
     {
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` IN ('1','2','3')",
             ['where' => ['post_level:in' => ['1','2','3']]],
         );
@@ -196,7 +181,7 @@ class AqlTest extends TestCase
 
     public function test_between()
     {
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` BETWEEN 4 AND 5",
             ['where' => ['post_level BETWEEN' => [4, 5]]],
         );
@@ -204,7 +189,7 @@ class AqlTest extends TestCase
 
     public function test_between2()
     {
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` BETWEEN '4' AND '5'",
             ['where' => ['post_level BETWEEN' => ['4', '5']]],
         );
@@ -212,7 +197,7 @@ class AqlTest extends TestCase
 
     public function test_between3()
     {
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` BETWEEN 4 AND 5",
             ['where' => ['post_level:between' => [4, 5]]],
         );
@@ -220,7 +205,7 @@ class AqlTest extends TestCase
 
     public function test_not_between()
     {
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` NOT BETWEEN 4 AND 5",
             ['where' => ['post_level NOT BETWEEN' => [4, 5]]],
         );
@@ -228,7 +213,7 @@ class AqlTest extends TestCase
 
     public function test_not_equal()
     {
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` != 'a'",
             ['where' => ['post_level !=' => 'a']],
         );
@@ -236,7 +221,7 @@ class AqlTest extends TestCase
 
     public function test_not_equal2()
     {
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` != 'a'",
             ['where' => ['post_level:not' => 'a']],
         );
@@ -244,7 +229,7 @@ class AqlTest extends TestCase
 
     public function test_not_equal3()
     {
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` != 'a'",
             ['where' => ['post_level:neq' => 'a']],
         );
@@ -252,7 +237,7 @@ class AqlTest extends TestCase
 
     public function test_raw_key()
     {
-        $this->testQuery(
+        $this->aql(
             "WHERE post_level = 'a'",
             ['where' => ['|post_level' => 'a']],
         );
@@ -260,7 +245,7 @@ class AqlTest extends TestCase
 
     public function test_replace()
     {
-        $this->testQuery(
+        $this->aql(
             "WHERE post_owner = 'Tomek\'s' AND post_level = 'x'",
             ['where' => [
                 "|post_owner = {owner} AND post_level = {level}" =>
@@ -274,7 +259,7 @@ class AqlTest extends TestCase
 
     public function test_or()
     {
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` = 'a' OR `post_owner` = 'John'",
             ['where' => [
                 ':operator' => 'OR',
@@ -286,7 +271,7 @@ class AqlTest extends TestCase
 
     public function test_parenteses()
     {
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` = 'a' AND (`post_owner` = 'John' OR `post_status` = 'draft')",
             ['where' => [
                 'post_level' => 'a',
@@ -301,7 +286,7 @@ class AqlTest extends TestCase
 
     public function test_escape_null()
     {
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` = NULL",
             ['where' => [
                 'post_level' => null,
@@ -311,7 +296,7 @@ class AqlTest extends TestCase
 
     public function test_escape_int()
     {
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` = 12",
             ['where' => [
                 'post_level' => 12,
@@ -321,7 +306,7 @@ class AqlTest extends TestCase
 
     public function test_escape_string()
     {
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` = 'a'",
             ['where' => [
                 'post_level' => 'a',
@@ -332,7 +317,7 @@ class AqlTest extends TestCase
     public function test_escape_backslesh()
     {
         $b = '\\';
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` = '" .$b . $b ."'",
             ['where' => [
                 'post_level' => $b,
@@ -344,7 +329,7 @@ class AqlTest extends TestCase
     {
         $b = '\\';
         $s = "'";
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` = '" .$b . $s ."'",
             ['where' => [
                 'post_level' => $s,
@@ -356,7 +341,7 @@ class AqlTest extends TestCase
     {
         $b = '\\';
         $d = '"';
-        $this->testQuery(
+        $this->aql(
             "WHERE `post_level` = '" .$b . $d ."'",
             ['where' => [
                 'post_level' => $d,
