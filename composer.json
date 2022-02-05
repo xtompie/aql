@@ -12,7 +12,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "Xtompie\\AQL\\": "src"
+            "Xtompie\\Aql\\": "src"
         }
     },
     "require": {

@@ -4,9 +4,9 @@ Building SQL using array
 
 
 ```php
-use Xtompie\AQL\AQL;
+use Xtompie\Aql\Aql;
 
-$sql = AQL::query([
+$sql = Aql::query([
     "select" => "*",
     "from" => "users"
     "where" => [
