@@ -3,276 +3,279 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
-use Xtompie\Aql\Aql;
-
+use Xtompie\Aql\AqlService;
 
 class AqlTest extends TestCase
 {
-    protected $escaper;
 
-    protected function setUp(): void
-    {
-        $this->escaper = function ($v) {
-            if (is_null($v)) {
-                return 'NULL';
-            }
-            if (is_integer($v)) {
-                return $v;
-            }
-            return addslashes($v);
-        };
-        $this->service = new Aql();
-    }
-
-    protected function aql($sql, $aql)
+    protected function aql(array $aql, string $sql, array $binds = [], array $types = [])
     {
         // given
 
         // when
-        $result = $this->service->__invoke($aql, $this->escaper);
+        $result = (new AqlService())($aql);
 
         // then
-        $this->assertSame($sql, $result);
+        $this->assertSame($sql, $result->sql());
+        $this->assertSame($binds, $result->binds());
+        $this->assertSame($types, $result->types());
     }
 
     public function test_select_raw()
     {
         $this->aql(
-            "SELECT post_id, post_title as title",
             ["select" => "post_id, post_title as title"],
+            "SELECT post_id, post_title as title",
         );
     }
 
     public function test_select_array()
     {
         $this->aql(
-            "SELECT `post_id`, `post_title` as 'title'",
             ["select" => ['post_id', 'title' => 'post_title']],
+            "SELECT `post_id`, `post_title` as 'title'",
         );
     }
 
     public function test_select_escape()
     {
         $this->aql(
-            "SELECT COUNT(*) as 'count'",
             ["select" => ['count' => '|COUNT(*)']],
+            "SELECT COUNT(*) as 'count'",
         );
     }
 
     public function test_select_escape2()
     {
         $this->aql(
-            "SELECT COUNT(*) as count",
             ["select" => ['|count' => '|COUNT(*)']],
+            "SELECT COUNT(*) as count",
         );
     }
 
     public function test_prefix()
     {
         $this->aql(
-            "SELECT SQL_NO_CACHE DISTINCT",
             ["prefix" => 'SQL_NO_CACHE DISTINCT'],
+            "SELECT SQL_NO_CACHE DISTINCT",
         );
     }
 
     public function test_from_simple()
     {
         $this->aql(
-            "FROM `order`",
             ["from" => 'order'],
+            "FROM `order`",
         );
     }
 
     public function test_from_alias()
     {
         $this->aql(
-            "FROM `posts` as 'p'",
             ["from" => ['p' => 'posts']],
+            "FROM `posts` as 'p'",
         );
     }
 
     public function test_join()
     {
         $this->aql(
+            ['join' => ['JOIN author ON (author_id = post_id_author)', 'LEFT JOIN img ON (author_id_img = img_id)']],
             "JOIN author ON (author_id = post_id_author) LEFT JOIN img ON (author_id_img = img_id)",
-            ['join'  => ['JOIN author ON (author_id = post_id_author)', 'LEFT JOIN img ON (author_id_img = img_id)']],
         );
     }
 
     public function test_group()
     {
         $this->aql(
-            "GROUP BY post_id",
             ['group'  => 'post_id'],
+            "GROUP BY post_id",
         );
     }
 
     public function test_having()
     {
         $this->aql(
-            "HAVING post_id > 0",
             ['having' => 'post_id > 0'],
+            "HAVING post_id > 0",
         );
     }
 
     public function test_having2()
     {
         $this->aql(
-            "HAVING `post_id` > '0'",
             ['having' => ['post_id >' =>  '0']],
+            "HAVING `post_id` > ?",
+            ['0'],
+            ['string']
         );
     }
 
     public function test_order()
     {
         $this->aql(
-            "ORDER BY created_at DESC",
             ['order' => 'created_at DESC'],
+            "ORDER BY created_at DESC",
         );
     }
 
     public function test_offet()
     {
         $this->aql(
-            "OFFSET 100",
             ['offset' => 100],
+            "OFFSET ?",
+            [100],
+            ['int'],
         );
     }
 
     public function test_limit()
     {
         $this->aql(
-            "LIMIT 10",
             ['limit' => 10],
+            "LIMIT ?",
+            [10],
+            ['int']
         );
     }
 
     public function test_offset_limit()
     {
         $this->aql(
-            "LIMIT 10 OFFSET 100",
             ['offset' => 100, 'limit' => 10],
+            "LIMIT ? OFFSET ?",
+            [10, 100],
+            ['int', 'int']
         );
     }
 
     public function test_equal()
     {
         $this->aql(
-            "WHERE `post_level` = 'a'",
             ['where' => ['post_level' => 'a']],
+            "WHERE `post_level` = ?",
+            ['a'],
+            ['string']
         );
     }
 
     public function test_in()
     {
         $this->aql(
-            "WHERE `post_level` IN ('a','b','c')",
-            ['where' => ['post_level IN' => ['a','b','c']]],
+            ['where' => ['post_level IN' => ['a', 'b', 'c']]],
+            "WHERE `post_level` IN (?,?,?)",
+            ['a', 'b', 'c'],
+            ['string', 'string', 'string']
         );
     }
 
     public function test_in2()
     {
         $this->aql(
-            "WHERE `post_level` IN ('1','2','3')",
             ['where' => ['post_level:in' => ['1','2','3']]],
+            "WHERE `post_level` IN (?,?,?)",
+            ['1', '2', '3'],
+            ['string', 'string', 'string']
         );
     }
 
     public function test_between()
     {
         $this->aql(
-            "WHERE `post_level` BETWEEN 4 AND 5",
             ['where' => ['post_level BETWEEN' => [4, 5]]],
+            "WHERE `post_level` BETWEEN ? AND ?",
+            [4, 5],
+            ['int', 'int']
         );
     }
 
     public function test_between2()
     {
         $this->aql(
-            "WHERE `post_level` BETWEEN '4' AND '5'",
             ['where' => ['post_level BETWEEN' => ['4', '5']]],
+            "WHERE `post_level` BETWEEN ? AND ?",
+            ['4', '5'],
+            ['string', 'string']
         );
     }
 
     public function test_between3()
     {
         $this->aql(
-            "WHERE `post_level` BETWEEN 4 AND 5",
             ['where' => ['post_level:between' => [4, 5]]],
+            "WHERE `post_level` BETWEEN ? AND ?",
+            [4, 5],
+            ['int', 'int']
         );
     }
 
     public function test_not_between()
     {
         $this->aql(
-            "WHERE `post_level` NOT BETWEEN 4 AND 5",
             ['where' => ['post_level NOT BETWEEN' => [4, 5]]],
+            "WHERE `post_level` NOT BETWEEN ? AND ?",
+            [4, 5],
+            ['int', 'int']
         );
     }
 
     public function test_not_equal()
     {
         $this->aql(
-            "WHERE `post_level` != 'a'",
             ['where' => ['post_level !=' => 'a']],
+            "WHERE `post_level` != ?",
+            ['a'],
+            ['string']
         );
     }
 
     public function test_not_equal2()
     {
         $this->aql(
-            "WHERE `post_level` != 'a'",
             ['where' => ['post_level:not' => 'a']],
+            "WHERE `post_level` != ?",
+            ['a'],
+            ['string']
         );
     }
 
     public function test_not_equal3()
     {
         $this->aql(
-            "WHERE `post_level` != 'a'",
             ['where' => ['post_level:neq' => 'a']],
+            "WHERE `post_level` != ?",
+            ['a'],
+            ['string']
         );
     }
 
     public function test_raw_key()
     {
         $this->aql(
-            "WHERE post_level = 'a'",
             ['where' => ['|post_level' => 'a']],
-        );
-    }
-
-    public function test_replace()
-    {
-        $this->aql(
-            "WHERE post_owner = 'Tomek\'s' AND post_level = 'x'",
-            ['where' => [
-                "|post_owner = {owner} AND post_level = {level}" =>
-                [
-                    '{owner}' => 'Tomek\'s',
-                    '{level}' => 'x',
-                ]
-            ]],
+            "WHERE post_level = ?",
+            ['a'],
+            ['string']
         );
     }
 
     public function test_or()
     {
         $this->aql(
-            "WHERE `post_level` = 'a' OR `post_owner` = 'John'",
             ['where' => [
                 ':operator' => 'OR',
                 'post_level' => 'a',
                 'post_owner' => 'John',
             ]],
+            "WHERE `post_level` = ? OR `post_owner` = ?",
+            ['a', 'John'],
+            ['string', 'string']
         );
     }
 
     public function test_parenteses()
     {
         $this->aql(
-            "WHERE `post_level` = 'a' AND (`post_owner` = 'John' OR `post_status` = 'draft')",
             ['where' => [
                 'post_level' => 'a',
                 [
@@ -281,71 +284,45 @@ class AqlTest extends TestCase
                     'post_status' => 'draft',
                 ]
             ]],
+            "WHERE `post_level` = ? AND (`post_owner` = ? OR `post_status` = ?)",
+            ['a', 'John', 'draft'],
+            ['string', 'string', 'string']
         );
     }
 
     public function test_escape_null()
     {
         $this->aql(
-            "WHERE `post_level` = NULL",
             ['where' => [
                 'post_level' => null,
             ]],
+            "WHERE `post_level` = ?",
+            [null],
+            ['null']
         );
     }
 
     public function test_escape_int()
     {
         $this->aql(
-            "WHERE `post_level` = 12",
             ['where' => [
                 'post_level' => 12,
             ]],
+            "WHERE `post_level` = ?",
+            [12],
+            ['int']
         );
     }
 
     public function test_escape_string()
     {
         $this->aql(
-            "WHERE `post_level` = 'a'",
             ['where' => [
                 'post_level' => 'a',
             ]],
-        );
-    }
-
-    public function test_escape_backslesh()
-    {
-        $b = '\\';
-        $this->aql(
-            "WHERE `post_level` = '" .$b . $b ."'",
-            ['where' => [
-                'post_level' => $b,
-            ]],
-        );
-    }
-
-    public function test_escape_single_quote()
-    {
-        $b = '\\';
-        $s = "'";
-        $this->aql(
-            "WHERE `post_level` = '" .$b . $s ."'",
-            ['where' => [
-                'post_level' => $s,
-            ]],
-        );
-    }
-
-    public function test_escape_double_quote()
-    {
-        $b = '\\';
-        $d = '"';
-        $this->aql(
-            "WHERE `post_level` = '" .$b . $d ."'",
-            ['where' => [
-                'post_level' => $d,
-            ]],
+            "WHERE `post_level` = ?",
+            ['a'],
+            ['string']
         );
     }
 }
