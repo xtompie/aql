@@ -179,6 +179,16 @@ class AqlTest extends TestCase
         );
     }
 
+    public function test_in3()
+    {
+        $this->aql(
+            ['where' => ['id' => ['a', 'b', 'c']]],
+            "WHERE `id` IN (?,?,?)",
+            ['a', 'b', 'c'],
+            ['string', 'string', 'string']
+        );
+    }
+
     public function test_between()
     {
         $this->aql(

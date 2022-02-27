@@ -272,6 +272,10 @@ class AqlService
                 default => $comparison,
             };
 
+            if ($comparison === '=' && is_array($value)) {
+                $comparison = 'IN';
+            }
+
             $build->sql("$key $comparison ");
             if ($comparison === 'BETWEEN' || $comparison === 'NOT BETWEEN') {
                 $build->sql($build->bind($value[0]) . ' AND ' . $build->bind($value[1]));
