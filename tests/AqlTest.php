@@ -33,7 +33,7 @@ class AqlTest extends TestCase
     {
         $this->aql(
             ["select" => ['post_id', 'title' => 'post_title']],
-            "SELECT `post_id`, `post_title` as 'title'",
+            "SELECT post_id, post_title as 'title'",
         );
     }
 
@@ -73,7 +73,7 @@ class AqlTest extends TestCase
     {
         $this->aql(
             ["from" => ['p' => 'posts']],
-            "FROM `posts` as 'p'",
+            "FROM posts as 'p'",
         );
     }
 
@@ -105,7 +105,7 @@ class AqlTest extends TestCase
     {
         $this->aql(
             ['having' => ['post_id >' =>  '0']],
-            "HAVING `post_id` > ?",
+            "HAVING post_id > ?",
             ['0'],
             ['string']
         );
@@ -153,7 +153,7 @@ class AqlTest extends TestCase
     {
         $this->aql(
             ['where' => ['post_level' => 'a']],
-            "WHERE `post_level` = ?",
+            "WHERE post_level = ?",
             ['a'],
             ['string']
         );
@@ -163,7 +163,7 @@ class AqlTest extends TestCase
     {
         $this->aql(
             ['where' => ['post_level IN' => ['a', 'b', 'c']]],
-            "WHERE `post_level` IN (?,?,?)",
+            "WHERE post_level IN (?,?,?)",
             ['a', 'b', 'c'],
             ['string', 'string', 'string']
         );
@@ -173,7 +173,7 @@ class AqlTest extends TestCase
     {
         $this->aql(
             ['where' => ['post_level:in' => ['1','2','3']]],
-            "WHERE `post_level` IN (?,?,?)",
+            "WHERE post_level IN (?,?,?)",
             ['1', '2', '3'],
             ['string', 'string', 'string']
         );
@@ -183,7 +183,7 @@ class AqlTest extends TestCase
     {
         $this->aql(
             ['where' => ['id' => ['a', 'b', 'c']]],
-            "WHERE `id` IN (?,?,?)",
+            "WHERE id IN (?,?,?)",
             ['a', 'b', 'c'],
             ['string', 'string', 'string']
         );
@@ -193,7 +193,7 @@ class AqlTest extends TestCase
     {
         $this->aql(
             ['where' => ['post_level BETWEEN' => [4, 5]]],
-            "WHERE `post_level` BETWEEN ? AND ?",
+            "WHERE post_level BETWEEN ? AND ?",
             [4, 5],
             ['int', 'int']
         );
@@ -203,7 +203,7 @@ class AqlTest extends TestCase
     {
         $this->aql(
             ['where' => ['post_level BETWEEN' => ['4', '5']]],
-            "WHERE `post_level` BETWEEN ? AND ?",
+            "WHERE post_level BETWEEN ? AND ?",
             ['4', '5'],
             ['string', 'string']
         );
@@ -213,7 +213,7 @@ class AqlTest extends TestCase
     {
         $this->aql(
             ['where' => ['post_level:between' => [4, 5]]],
-            "WHERE `post_level` BETWEEN ? AND ?",
+            "WHERE post_level BETWEEN ? AND ?",
             [4, 5],
             ['int', 'int']
         );
@@ -223,7 +223,7 @@ class AqlTest extends TestCase
     {
         $this->aql(
             ['where' => ['post_level NOT BETWEEN' => [4, 5]]],
-            "WHERE `post_level` NOT BETWEEN ? AND ?",
+            "WHERE post_level NOT BETWEEN ? AND ?",
             [4, 5],
             ['int', 'int']
         );
@@ -233,7 +233,7 @@ class AqlTest extends TestCase
     {
         $this->aql(
             ['where' => ['post_level !=' => 'a']],
-            "WHERE `post_level` != ?",
+            "WHERE post_level != ?",
             ['a'],
             ['string']
         );
@@ -243,7 +243,7 @@ class AqlTest extends TestCase
     {
         $this->aql(
             ['where' => ['post_level:not' => 'a']],
-            "WHERE `post_level` != ?",
+            "WHERE post_level != ?",
             ['a'],
             ['string']
         );
@@ -253,9 +253,39 @@ class AqlTest extends TestCase
     {
         $this->aql(
             ['where' => ['post_level:neq' => 'a']],
-            "WHERE `post_level` != ?",
+            "WHERE post_level != ?",
             ['a'],
             ['string']
+        );
+    }
+
+    public function test_gt()
+    {
+        $this->aql(
+            ['where' => ['post_level gt' => 3]],
+            "WHERE post_level > ?",
+            [3],
+            ['int']
+        );
+    }
+
+    public function test_gt2()
+    {
+        $this->aql(
+            ['where' => ['post_level:gt' => 3]],
+            "WHERE post_level > ?",
+            [3],
+            ['int']
+        );
+    }
+
+    public function test_gt3()
+    {
+        $this->aql(
+            ['where' => ['post_level-gt' => 3]],
+            "WHERE post_level > ?",
+            [3],
+            ['int']
         );
     }
 
@@ -277,7 +307,7 @@ class AqlTest extends TestCase
                 'post_level' => 'a',
                 'post_owner' => 'John',
             ]],
-            "WHERE `post_level` = ? OR `post_owner` = ?",
+            "WHERE post_level = ? OR post_owner = ?",
             ['a', 'John'],
             ['string', 'string']
         );
@@ -294,7 +324,7 @@ class AqlTest extends TestCase
                     'post_status' => 'draft',
                 ]
             ]],
-            "WHERE `post_level` = ? AND (`post_owner` = ? OR `post_status` = ?)",
+            "WHERE post_level = ? AND (post_owner = ? OR post_status = ?)",
             ['a', 'John', 'draft'],
             ['string', 'string', 'string']
         );
@@ -306,7 +336,7 @@ class AqlTest extends TestCase
             ['where' => [
                 'post_level' => null,
             ]],
-            "WHERE `post_level` = ?",
+            "WHERE post_level = ?",
             [null],
             ['null']
         );
@@ -318,7 +348,7 @@ class AqlTest extends TestCase
             ['where' => [
                 'post_level' => 12,
             ]],
-            "WHERE `post_level` = ?",
+            "WHERE post_level = ?",
             [12],
             ['int']
         );
@@ -330,7 +360,7 @@ class AqlTest extends TestCase
             ['where' => [
                 'post_level' => 'a',
             ]],
-            "WHERE `post_level` = ?",
+            "WHERE post_level = ?",
             ['a'],
             ['string']
         );
@@ -343,7 +373,7 @@ class AqlTest extends TestCase
                 'post_level' => 'a',
                 '|time' => 'NOW()',
             ]],
-            "SET `post_level` = ?, `time` = NOW()",
+            "SET post_level = ?, time = NOW()",
             ['a'],
             ['string']
         );
