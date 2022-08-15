@@ -46,4 +46,13 @@ class AqlResult
 
         return $types;
     }
+
+    public function toArray(): array
+    {
+        return [
+            $this->sql(),
+            $this->binds(),
+            $this->types(),
+        ];
+    }
 }
