@@ -7,7 +7,7 @@ use Xtompie\Aql\Aql;
 
 $result = (new Aql)([
     'select' => '*',
-    'from' => 'order'
+    'from' => 'order',
     'where' => [
         'status' => 'active',
     ],
