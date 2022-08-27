@@ -32,13 +32,7 @@ composer require xtompie/aql
 
 ## Docs
 
-Aql as result return array.
-At offset 0 is prepated sql statment.
-At offset 1 binds as array
-
 ### Api
-
-
 
 #### Select
 
