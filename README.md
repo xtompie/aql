@@ -76,7 +76,12 @@ See [Quoting keywords](#quoting-keywords)
 #### Join
 
 ```php
-(new Aql)(['join' => ['JOIN author ON (author_id = post_id_author)', 'LEFT JOIN img ON (author_id_img = img_id)']])->toArray();
+(new Aql)([
+    'join' => [
+        'JOIN author ON (author_id = post_id_author)',
+        'LEFT JOIN img ON (author_id_img = img_id)'
+    ]
+])->toArray();
 // ['JOIN author ON (author_id = post_id_author) LEFT JOIN img ON (author_id_img = img_id)"]
 ```
 
