@@ -1,6 +1,6 @@
 # Array Query Language
 
-Building SQL prepeared statment with binds using array
+Building SQL prepared statment with binds using array
 
 ```php
 use Xtompie\Aql\Aql;
