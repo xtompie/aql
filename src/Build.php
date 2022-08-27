@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Xtompie\Aql;
 
-class AqlBuild
+class Build
 {
     public function __construct(
         protected string $sql = '',
@@ -13,7 +13,7 @@ class AqlBuild
 
     public function sql(string $sql, string $space = '')
     {
-        $this->sql .= $sql;
+        $this->sql .= $space . $sql;
     }
 
     public function sqls(array $sqls, string $glue = ' ', $space = ' ')
@@ -27,13 +27,8 @@ class AqlBuild
         return "?";
     }
 
-    public function types(): array
+    public function result(): Result
     {
-        return $this->binds;
-    }
-
-    public function result(): AqlResult
-    {
-        return new AqlResult(trim($this->sql), $this->binds);
+        return new Result(trim($this->sql), $this->binds);
     }
 }

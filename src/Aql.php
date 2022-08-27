@@ -6,7 +6,7 @@ namespace Xtompie\Aql;
 
 use Exception;
 
-class AqlService
+class Aql
 {
     public function __construct(
         protected array $keywords = [],
@@ -17,9 +17,23 @@ class AqlService
         }
     }
 
-    public function __invoke(array $aql): AqlResult
+    public function withQuote(string $quote): static
     {
-        $build = new AqlBuild();
+        $new = clone $this;
+        $new->quote = $quote;
+        return $new;
+    }
+
+    public function withKeywords(array $keywords): static
+    {
+        $new = clone $this;
+        $new->keywords = $keywords;
+        return $new;
+    }
+
+    public function __invoke(array $aql): Result
+    {
+        $build = new Build();
 
         $this->select($aql, $build);
         $this->insert($aql, $build);
@@ -38,7 +52,7 @@ class AqlService
         return $build->result();
     }
 
-    protected function select(array $aql, AqlBuild $build)
+    protected function select(array $aql, Build $build)
     {
         if (!isset($aql['select']) && !isset($aql['prefix'])) {
             return;
@@ -68,7 +82,7 @@ class AqlService
         }
     }
 
-    protected function insert(array $aql, AqlBuild $build)
+    protected function insert(array $aql, Build $build)
     {
         if (!isset($aql['insert'])) {
             return;
@@ -76,7 +90,7 @@ class AqlService
         $build->sql(" INSERT INTO " . $this->quote($aql['insert']));
     }
 
-    protected function update(array $aql, AqlBuild $build)
+    protected function update(array $aql, Build $build)
     {
         if (!isset($aql['update'])) {
             return;
@@ -84,7 +98,7 @@ class AqlService
         $build->sql(" UPDATE " . $this->quote($aql['update']));
     }
 
-    protected function delete(array $aql, AqlBuild $build)
+    protected function delete(array $aql, Build $build)
     {
         if (!isset($aql['delete'])) {
             return;
@@ -92,7 +106,7 @@ class AqlService
         $build->sql(" DELETE FROM " . $this->quote($aql['delete']));
     }
 
-    protected function from(array $aql, AqlBuild $build)
+    protected function from(array $aql, Build $build)
     {
         if (!isset($aql['from'])) {
             return;
@@ -113,7 +127,7 @@ class AqlService
         }
     }
 
-    protected function join(array $aql, AqlBuild $build)
+    protected function join(array $aql, Build $build)
     {
         if (!isset($aql['join'])) {
             return;
@@ -127,7 +141,7 @@ class AqlService
         }
     }
 
-    protected function group(array $aql, AqlBuild $build)
+    protected function group(array $aql, Build $build)
     {
         if (!isset($aql['group'])) {
             return;
@@ -143,7 +157,7 @@ class AqlService
         }
     }
 
-    protected function having(array $aql, AqlBuild $build)
+    protected function having(array $aql, Build $build)
     {
         if (!isset($aql['having'])) {
             return;
@@ -161,7 +175,7 @@ class AqlService
         }
     }
 
-    protected function order(array $aql, AqlBuild $build)
+    protected function order(array $aql, Build $build)
     {
         if (!isset($aql['order'])) {
             return;
@@ -177,7 +191,7 @@ class AqlService
         }
     }
 
-    protected function limit(array $aql, AqlBuild $build)
+    protected function limit(array $aql, Build $build)
     {
         if (!isset($aql['limit'])) {
             return;
@@ -186,7 +200,7 @@ class AqlService
         $build->sql(' LIMIT '. $build->bind((int)$aql['limit']));
     }
 
-    protected function offset(array $aql, AqlBuild $build)
+    protected function offset(array $aql, Build $build)
     {
         if (!isset($aql['offset'])) {
             return;
@@ -195,7 +209,7 @@ class AqlService
         $build->sql(' OFFSET '. $build->bind((int)$aql['offset']));
     }
 
-    protected function where(array $aql, AqlBuild $build)
+    protected function where(array $aql, Build $build)
     {
         if (!isset($aql['where'])) {
             return;
@@ -205,7 +219,7 @@ class AqlService
         $this->condition($aql['where'], $build);
     }
 
-    protected function set(array $aql, AqlBuild $build)
+    protected function set(array $aql, Build $build)
     {
         if (!isset($aql['set'])) {
             return '';
@@ -247,7 +261,7 @@ class AqlService
         return $this->quote . str_replace($this->quote, $this->quote . $this->quote, $identifier) . $this->quote;
     }
 
-    protected function condition(array $condition, AqlBuild $build)
+    protected function condition(array $condition, Build $build)
     {
         $logical = isset($condition[':operator']) && strtolower($condition[':operator']) == 'or' ? 'OR' : 'AND';
         unset($condition[':operator']);
@@ -275,7 +289,7 @@ class AqlService
             }
 
             // key and comparison
-            [$key, $comparison] = array_pad(preg_split('/[:\-\s]/', $key, 2), 2, null);
+            [$key, $comparison] = array_pad(preg_split('/[:\s]/', $key, 2), 2, null);
             $key = $key[0] === '|' ? substr($key, 1) : $this->quote($key);
             $comparison = $comparison !== null ? $comparison : '=';
 
