@@ -162,7 +162,7 @@ When condition key is a string then expected is column name with optional compar
 Compartition operator is expected after first space or `:` character.
 Available compartition operators are all valid SQL comparition operators and aditional:
 ```
-`eq` is `=`
+`eq` is `=`,
 `gt` is `>`,
 `ge` is `>=`,
 `lt` is `<`,
@@ -185,6 +185,7 @@ Logical operator can by change using `:operator` key.
     'where' => [
         'a' => 'a',
         'b' => 'b',
+        ':operator' => 'OR',
     ]
 ])
     ->toArray()
