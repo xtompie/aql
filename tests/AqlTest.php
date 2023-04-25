@@ -92,6 +92,14 @@ class AqlTest extends TestCase
         );
     }
 
+    public function test_group_Array()
+    {
+        $this->aql(
+            ['group'  => ['post_id', 'post_status']],
+            "GROUP BY post_id, post_status",
+        );
+    }
+
     public function test_having()
     {
         $this->aql(

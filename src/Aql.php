@@ -153,7 +153,7 @@ class Aql
             $build->sql(' ' . $aql['group']);
         }
         if (is_array($aql['group'])) {
-            $build->sqls($aql['group']);
+            $build->sqls($aql['group'], ', ');
         }
     }
 
