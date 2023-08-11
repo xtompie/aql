@@ -1,5 +1,26 @@
 # Array Query Language
 
+- [Array Query Language](#array-query-language)
+  - [Requiments](#requiments)
+  - [Installation](#installation)
+  - [Docs](#docs)
+    - [Api](#api)
+      - [Select](#select)
+      - [Prefix](#prefix)
+      - [From](#from)
+      - [Join](#join)
+      - [Group](#group)
+      - [Having](#having)
+      - [Order](#order)
+      - [Limit](#limit)
+      - [Offset](#offset)
+      - [Where](#where)
+        - [String key](#string-key)
+        - [Int key and string value](#int-key-and-string-value)
+        - [Int key and array value](#int-key-and-array-value)
+    - [Quoting keywords](#quoting-keywords)
+    - [Extending](#extending)
+
 Building SQL prepared statment with binds using array
 
 ```php
@@ -26,7 +47,7 @@ PHP >= 8.0
 
 Using [composer](https://getcomposer.org/)
 
-```
+```shell
 composer require xtompie/aql
 ```
 
@@ -71,7 +92,6 @@ The `|` character can be specified at the beginning of key or value to use the r
 
 Keywords are quoted.
 See [Quoting keywords](#quoting-keywords)
-
 
 #### Join
 
@@ -133,11 +153,9 @@ Limit is casted to int.
 
 Offset is casted to int.
 
-
 #### Where
 
 ##### String key
-
 
 ```php
 (new Aql)([
@@ -161,7 +179,7 @@ Offset is casted to int.
 When condition key is a string then expected is column name with optional comparison operator.
 Compartition operator is expected after first space or `:` character.
 Available compartition operators are all valid SQL comparition operators and aditional:
-```
+
 `eq` is `=`,
 `gt` is `>`,
 `ge` is `>=`,
@@ -173,13 +191,12 @@ Available compartition operators are all valid SQL comparition operators and adi
 `notin` is `NOT IN`,
 `between` is `BETWEEN`,
 `notbetween` is `NOT BETWEEN`,
-```
 
 The `|` character can be specified at the beginning of key to use the raw sql fragment.
 
-
 By default logical operator for all condition is `AND`.
 Logical operator can by change using `:operator` key.
+
 ```php
 (new Aql)([
     'where' => [
