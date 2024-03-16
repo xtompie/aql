@@ -92,7 +92,6 @@ The `|` character can be specified at the beginning of key or value to use the r
 ```
 
 Keywords are quoted.
-See [Quoting keywords](#quoting-keywords)
 
 #### Join
 
