@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 use Xtompie\Aql\Aql;
+use Xtompie\Aql\PostgreSQLPlatform;
 
 class AqlTest extends TestCase
 {
@@ -349,6 +350,67 @@ class AqlTest extends TestCase
             ]],
             "SET post_level = ?, time = NOW()",
             ['a'],
+        );
+    }
+
+    public function test_quote_postgresql()
+    {
+        // given
+        $aql = new Aql(platform: new PostgreSQLPlatform());
+
+        // when
+        $result = $aql->__invoke(['from' => 'order']);
+
+        // then
+        $this->assertSame('FROM "order"', $result->sql());
+    }
+
+    public function test_values()
+    {
+        $this->aql(
+            ['values' => [
+                'order' => 1,
+                '|time' => 'NOW()',
+            ]],
+            "(`order`, time) VALUES (?, NOW())",
+            [1],
+        );
+    }
+
+    public function test_values_bulk()
+    {
+        $this->aql(
+            ['values_bulk' => [
+                [
+                    'order' => 1,
+                    '|time' => 'NOW()',
+                ],
+                [
+                    'order' => 2,
+                    '|time' => 'NOW()',
+                ],
+                [
+                    'order' => 3,
+                    '|time' => 'NOW()',
+                ],
+            ]],
+            "(`order`, time) VALUES (?, NOW()), (?, NOW()), (?, NOW())",
+            [1, 2, 3],
+        );
+    }
+
+    public function test_insert()
+    {
+        $this->aql(
+            [
+                'insert' => 'order',
+                'values' => [
+                    'order' => 1,
+                    '|time' => 'NOW()',
+                ]
+            ],
+            "INSERT INTO `order` (`order`, time) VALUES (?, NOW())",
+            [1],
         );
     }
 }

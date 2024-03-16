@@ -9,26 +9,11 @@ use Exception;
 class Aql
 {
     public function __construct(
-        protected array $keywords = [],
-        protected string $quote = '`',
+        protected ?Platform $platform = null,
     ) {
-        if (!$keywords) {
-            $this->initializeDefaultKeywords();
+        if ($platform === null) {
+            $this->platform = new MySQLPlatform();
         }
-    }
-
-    public function withQuote(string $quote): static
-    {
-        $new = clone $this;
-        $new->quote = $quote;
-        return $new;
-    }
-
-    public function withKeywords(array $keywords): static
-    {
-        $new = clone $this;
-        $new->keywords = $keywords;
-        return $new;
     }
 
     public function __invoke(array $aql): Result
@@ -41,6 +26,8 @@ class Aql
         $this->delete($aql, $build);
         $this->from($aql, $build);
         $this->set($aql, $build);
+        $this->values($aql, $build);
+        $this->valuesBulk($aql, $build);
         $this->join($aql, $build);
         $this->where($aql, $build);
         $this->group($aql, $build);
@@ -72,7 +59,7 @@ class Aql
         if (isset($aql['select']) && is_array($aql['select'])) {
             $fields = [];
             foreach ($aql['select'] as $k => $v) {
-                $field = $v[0] === '|' ? substr($v, 1) : $this->quote($v);
+                $field = $v[0] === '|' ? substr($v, 1) : $this->quoteIdentifier($v);
                 if (!is_int($k)) {
                     $field .= " as " . ($k[0] === '|' ? substr((string)$k, 1) : "'$k'");
                 }
@@ -87,7 +74,7 @@ class Aql
         if (!isset($aql['insert'])) {
             return;
         }
-        $build->sql(" INSERT INTO " . $this->quote($aql['insert']));
+        $build->sql(" INSERT INTO " . $this->quoteIdentifier($aql['insert']));
     }
 
     protected function update(array $aql, Build $build)
@@ -95,7 +82,7 @@ class Aql
         if (!isset($aql['update'])) {
             return;
         }
-        $build->sql(" UPDATE " . $this->quote($aql['update']));
+        $build->sql(" UPDATE " . $this->quoteIdentifier($aql['update']));
     }
 
     protected function delete(array $aql, Build $build)
@@ -103,7 +90,7 @@ class Aql
         if (!isset($aql['delete'])) {
             return;
         }
-        $build->sql(" DELETE FROM " . $this->quote($aql['delete']));
+        $build->sql(" DELETE FROM " . $this->quoteIdentifier($aql['delete']));
     }
 
     protected function from(array $aql, Build $build)
@@ -117,13 +104,13 @@ class Aql
         if (is_array($aql['from'])) {
             $table = reset($aql['from']);
             $alias = key($aql['from']);
-            $build->sql(' ' . $this->quote($table) . " as '" . $alias  . "'");
+            $build->sql(' ' . $this->quoteIdentifier($table) . " as '" . $alias  . "'");
         }
         else if ($aql['from'][0] === '|') {
             $build->sql(' ' . substr($aql['from'], 1));
         }
         else {
-            $build->sql(' ' . $this->quote($aql['from']));
+            $build->sql(' ' . $this->quoteIdentifier($aql['from']));
         }
     }
 
@@ -233,32 +220,73 @@ class Aql
             $build->sql($first ? ' ' : ', ');
             $first = false;
             if ($k[0] === '|') {
-                $build->sql($this->quote(substr($k, 1)) . " = " . $v);
+                $build->sql($this->quoteIdentifier(substr($k, 1)) . " = " . $v);
             }
             else  {
-                $build->sql($this->quote($k) . " = " . $build->bind($v));
+                $build->sql($this->quoteIdentifier($k) . " = " . $build->bind($v));
             }
         }
     }
 
-    protected function quote(string $identifier): string
+    protected function values(array $aql, Build $build)
     {
-        if (strpos($identifier, '.') !== false) {
-            $parts = explode('.', $identifier);
-            $parts = array_map(fn ($part) => $this->quoteSingle($part), $parts);
-            return implode('.', $parts);
+        if (!isset($aql['values'])) {
+            return '';
         }
 
-        return $this->quoteSingle($identifier);
+        $build->sql(' (');
+
+        $first = true;
+        foreach ($aql['values'] as $column => $value) {
+            $build->sql($first ? '' : ', ');
+            $first = false;
+            $column = $column[0] === '|' ? substr($column, 1) : $column;
+            $build->sql($this->quoteIdentifier($column));
+        }
+
+        $build->sql(') VALUES (');
+
+        $first = true;
+        foreach ($aql['values'] as $column => $value) {
+            $build->sql($first ? '' : ', ');
+            $first = false;
+            $build->sql($column[0] === '|' ? $value : $build->bind($value));
+        }
+
+        $build->sql(')');
     }
 
-    protected function quoteSingle(string $identifier): string
+    protected function valuesBulk(array $aql, Build $build)
     {
-        if (!isset($this->keywords[strtoupper($identifier)])) {
-            return $identifier;
+        if (!isset($aql['values_bulk']) || !is_array($aql['values_bulk']) || count($aql['values_bulk']) <= 0) {
+            return '';
         }
 
-        return $this->quote . str_replace($this->quote, $this->quote . $this->quote, $identifier) . $this->quote;
+        $bulk = array_values($aql['values_bulk']);
+        $columns = array_keys($bulk[0]);
+
+        $build->sql(' (');
+
+        $first = true;
+        foreach ($columns as $column) {
+            $build->sql($first ? '' : ', ');
+            $first = false;
+            $column = $column[0] === '|' ? substr($column, 1) : $column;
+            $build->sql($this->quoteIdentifier($column));
+        }
+
+        $build->sql(') VALUES');
+
+        foreach ($bulk as $index => $values) {
+            $build->sql($index === 0 ? ' (' : ', (');
+            $first = true;
+            foreach ($values as $column => $value) {
+                $build->sql($first ? '' : ', ');
+                $first = false;
+                $build->sql($column[0] === '|' ? $value : $build->bind($value));
+            }
+            $build->sql(')');
+        }
     }
 
     protected function condition(array $condition, Build $build)
@@ -290,7 +318,7 @@ class Aql
 
             // key and comparison
             [$key, $comparison] = array_pad(preg_split('/[:\s]/', $key, 2), 2, null);
-            $key = $key[0] === '|' ? substr($key, 1) : $this->quote($key);
+            $key = $key[0] === '|' ? substr($key, 1) : $this->quoteIdentifier($key);
             $comparison = $comparison !== null ? $comparison : '=';
 
             // comparison alias
@@ -332,248 +360,12 @@ class Aql
         }
     }
 
-    protected function initializeDefaultKeywords()
+    public function quoteIdentifier(string $identifier): string
     {
-        $this->keywords = array_flip([
-            'ACCESSIBLE',
-            'ADD',
-            'ALL',
-            'ALTER',
-            'ANALYZE',
-            'AND',
-            'AS',
-            'ASC',
-            'ASENSITIVE',
-            'BEFORE',
-            'BETWEEN',
-            'BIGINT',
-            'BINARY',
-            'BLOB',
-            'BOTH',
-            'BY',
-            'CALL',
-            'CASCADE',
-            'CASE',
-            'CHANGE',
-            'CHAR',
-            'CHARACTER',
-            'CHECK',
-            'COLLATE',
-            'COLUMN',
-            'CONDITION',
-            'CONNECTION',
-            'CONSTRAINT',
-            'CONTINUE',
-            'CONVERT',
-            'CREATE',
-            'CROSS',
-            'CURRENT_DATE',
-            'CURRENT_TIME',
-            'CURRENT_TIMESTAMP',
-            'CURRENT_USER',
-            'CURSOR',
-            'DATABASE',
-            'DATABASES',
-            'DAY_HOUR',
-            'DAY_MICROSECOND',
-            'DAY_MINUTE',
-            'DAY_SECOND',
-            'DEC',
-            'DECIMAL',
-            'DECLARE',
-            'DEFAULT',
-            'DELAYED',
-            'DELETE',
-            'DESC',
-            'DESCRIBE',
-            'DETERMINISTIC',
-            'DISTINCT',
-            'DISTINCTROW',
-            'DIV',
-            'DOUBLE',
-            'DROP',
-            'DUAL',
-            'EACH',
-            'ELSE',
-            'ELSEIF',
-            'ENCLOSED',
-            'ESCAPED',
-            'EXISTS',
-            'EXIT',
-            'EXPLAIN',
-            'FALSE',
-            'FETCH',
-            'FLOAT',
-            'FLOAT4',
-            'FLOAT8',
-            'FOR',
-            'FORCE',
-            'FOREIGN',
-            'FROM',
-            'FULLTEXT',
-            'GENERAL',
-            'GOTO',
-            'GRANT',
-            'GROUP',
-            'HAVING',
-            'HIGH_PRIORITY',
-            'HOUR_MICROSECOND',
-            'HOUR_MINUTE',
-            'HOUR_SECOND',
-            'IF',
-            'IGNORE',
-            'IGNORE_SERVER_IDS',
-            'IN',
-            'INDEX',
-            'INFILE',
-            'INNER',
-            'INOUT',
-            'INSENSITIVE',
-            'INSERT',
-            'INT',
-            'INT1',
-            'INT2',
-            'INT3',
-            'INT4',
-            'INT8',
-            'INTEGER',
-            'INTERVAL',
-            'INTO',
-            'IS',
-            'ITERATE',
-            'JOIN',
-            'KEY',
-            'KEYS',
-            'KILL',
-            'LABEL',
-            'LEADING',
-            'LEAVE',
-            'LEFT',
-            'LIKE',
-            'LIMIT',
-            'LINEAR',
-            'LINES',
-            'LOAD',
-            'LOCALTIME',
-            'LOCALTIMESTAMP',
-            'LOCK',
-            'LONG',
-            'LONGBLOB',
-            'LONGTEXT',
-            'LOOP',
-            'LOW_PRIORITY',
-            'MASTER_HEARTBEAT_PERIOD',
-            'MASTER_SSL_VERIFY_SERVER_CERT',
-            'MATCH',
-            'MAXVALUE',
-            'MEDIUMBLOB',
-            'MEDIUMINT',
-            'MEDIUMTEXT',
-            'MIDDLEINT',
-            'MINUTE_MICROSECOND',
-            'MINUTE_SECOND',
-            'MOD',
-            'MODIFIES',
-            'NATURAL',
-            'NO_WRITE_TO_BINLOG',
-            'NOT',
-            'NULL',
-            'NUMERIC',
-            'ON',
-            'OPTIMIZE',
-            'OPTION',
-            'OPTIONALLY',
-            'OR',
-            'ORDER',
-            'OUT',
-            'OUTER',
-            'OUTFILE',
-            'PARTITION',
-            'PRECISION',
-            'PRIMARY',
-            'PROCEDURE',
-            'PURGE',
-            'RAID0',
-            'RANGE',
-            'READ',
-            'READ_WRITE',
-            'READS',
-            'REAL',
-            'RECURSIVE',
-            'REFERENCES',
-            'REGEXP',
-            'RELEASE',
-            'RENAME',
-            'REPEAT',
-            'REPLACE',
-            'REQUIRE',
-            'RESIGNAL',
-            'RESTRICT',
-            'RETURN',
-            'REVOKE',
-            'RIGHT',
-            'RLIKE',
-            'ROWS',
-            'SCHEMA',
-            'SCHEMAS',
-            'SECOND_MICROSECOND',
-            'SELECT',
-            'SENSITIVE',
-            'SEPARATOR',
-            'SET',
-            'SHOW',
-            'SIGNAL',
-            'SLOW',
-            'SMALLINT',
-            'SONAME',
-            'SPATIAL',
-            'SPECIFIC',
-            'SQL',
-            'SQL_BIG_RESULT',
-            'SQL_CALC_FOUND_ROWS',
-            'SQL_SMALL_RESULT',
-            'SQLEXCEPTION',
-            'SQLSTATE',
-            'SQLWARNING',
-            'SSL',
-            'STARTING',
-            'STRAIGHT_JOIN',
-            'TABLE',
-            'TERMINATED',
-            'THEN',
-            'TINYBLOB',
-            'TINYINT',
-            'TINYTEXT',
-            'TO',
-            'TRAILING',
-            'TRIGGER',
-            'TRUE',
-            'UNDO',
-            'UNION',
-            'UNIQUE',
-            'UNLOCK',
-            'UNSIGNED',
-            'UPDATE',
-            'USAGE',
-            'USE',
-            'USING',
-            'UTC_DATE',
-            'UTC_TIME',
-            'UTC_TIMESTAMP',
-            'VALUES',
-            'VARBINARY',
-            'VARCHAR',
-            'VARCHARACTER',
-            'VARYING',
-            'WHEN',
-            'WHERE',
-            'WHILE',
-            'WITH',
-            'WRITE',
-            'X509',
-            'XOR',
-            'YEAR_MONTH',
-            'ZEROFILL',
-        ]);
+        if (!$this->platform instanceof Platform) {
+            throw new Exception();
+        }
+
+        return $this->platform->quoteIdentifier($identifier);
     }
 }

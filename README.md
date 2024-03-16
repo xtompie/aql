@@ -18,7 +18,8 @@
         - [String key](#string-key)
         - [Int key and string value](#int-key-and-string-value)
         - [Int key and array value](#int-key-and-array-value)
-    - [Quoting keywords](#quoting-keywords)
+      - [Insert](#insert)
+    - [Platform](#platform)
     - [Extending](#extending)
 
 Building SQL prepared statment with binds using array
@@ -236,11 +237,39 @@ Logical operator can by change using `:operator` key.
 // ['WHERE a = ? AND (b = ? OR c = ?)', ['aa', 'bb', 'cc]];
 ```
 
-### Quoting keywords
+#### Insert
 
-As default quoting keywords is set for MySQL.
-It can be changed by setting quote character and keywords in constructor or using methods `withQuote` and `withKeywords`.
-Quoting handles identifier chains separated by dot and quotes independently.
+```php
+(new Aql)([
+    'insert' => 'order',
+    'values' => [
+        'order' => 1,
+        '|time' => 'NOW()',
+    ]
+])->toArray();
+// ['INSERT INTO `order` (`order`, time) VALUES (?, NOW())', [1]];
+```
+
+### Platform
+
+Build in supported platforms: `MySQL/MariaDB` , `PostgreSQL`.
+
+Default platform is set to `MySQL/MariaDB`.
+
+Using `PostgreSQL`:
+
+```php
+use Xtompie/Aql/Aql;
+use Xtompie/Aql/PostgreSQLPlatform;
+
+(new Aql(platform: new PostgreSQLPlatform()))([
+    'SELECT' => '*',
+    'FROM' => 'order'
+])->toArray();
+// ['SELECT * FROM "order"', []];
+```
+
+If u want user other platform just pass it into constructor  `Xtompie\Aql\Aql::__construct(Xtompie\Aql\Platform $platform)`
 
 ### Extending
 
