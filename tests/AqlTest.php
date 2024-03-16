@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 use Xtompie\Aql\Aql;
+use Xtompie\Aql\MySQLPlatform;
 use Xtompie\Aql\PostgreSQLPlatform;
 
 class AqlTest extends TestCase
@@ -14,7 +15,7 @@ class AqlTest extends TestCase
         // given
 
         // when
-        $result = (new Aql())($aql);
+        $result = (new Aql(platform: new MySQLPlatform()))($aql);
 
         // then
         $this->assertSame($sql, $result->sql());

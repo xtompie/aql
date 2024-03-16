@@ -26,6 +26,7 @@ class MySQLPlatform implements Platform
         }
 
         if (!isset($this->keywords[strtoupper($identifier)])) {
+
             return $identifier;
         }
 

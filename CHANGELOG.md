@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 5.0.0
+
+- Simplified dependecies, no default platform
+- Add support for SQLite
+
 ## 4.0.0
 
 - Quote and Keywords replaced by Platfrom

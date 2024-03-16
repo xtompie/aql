@@ -9,11 +9,8 @@ use Exception;
 class Aql
 {
     public function __construct(
-        protected ?Platform $platform = null,
+        protected Platform $platform,
     ) {
-        if ($platform === null) {
-            $this->platform = new MySQLPlatform();
-        }
     }
 
     public function __invoke(array $aql): Result
@@ -59,7 +56,7 @@ class Aql
         if (isset($aql['select']) && is_array($aql['select'])) {
             $fields = [];
             foreach ($aql['select'] as $k => $v) {
-                $field = $v[0] === '|' ? substr($v, 1) : $this->quoteIdentifier($v);
+                $field = $v[0] === '|' ? substr($v, 1) : $this->identifier($v);
                 if (!is_int($k)) {
                     $field .= " as " . ($k[0] === '|' ? substr((string)$k, 1) : "'$k'");
                 }
@@ -74,7 +71,7 @@ class Aql
         if (!isset($aql['insert'])) {
             return;
         }
-        $build->sql(" INSERT INTO " . $this->quoteIdentifier($aql['insert']));
+        $build->sql(" INSERT INTO " . $this->identifier($aql['insert']));
     }
 
     protected function update(array $aql, Build $build)
@@ -82,7 +79,7 @@ class Aql
         if (!isset($aql['update'])) {
             return;
         }
-        $build->sql(" UPDATE " . $this->quoteIdentifier($aql['update']));
+        $build->sql(" UPDATE " . $this->identifier($aql['update']));
     }
 
     protected function delete(array $aql, Build $build)
@@ -90,7 +87,7 @@ class Aql
         if (!isset($aql['delete'])) {
             return;
         }
-        $build->sql(" DELETE FROM " . $this->quoteIdentifier($aql['delete']));
+        $build->sql(" DELETE FROM " . $this->identifier($aql['delete']));
     }
 
     protected function from(array $aql, Build $build)
@@ -104,13 +101,13 @@ class Aql
         if (is_array($aql['from'])) {
             $table = reset($aql['from']);
             $alias = key($aql['from']);
-            $build->sql(' ' . $this->quoteIdentifier($table) . " as '" . $alias  . "'");
+            $build->sql(' ' . $this->identifier($table) . " as '" . $alias  . "'");
         }
         else if ($aql['from'][0] === '|') {
             $build->sql(' ' . substr($aql['from'], 1));
         }
         else {
-            $build->sql(' ' . $this->quoteIdentifier($aql['from']));
+            $build->sql(' ' . $this->identifier($aql['from']));
         }
     }
 
@@ -220,10 +217,10 @@ class Aql
             $build->sql($first ? ' ' : ', ');
             $first = false;
             if ($k[0] === '|') {
-                $build->sql($this->quoteIdentifier(substr($k, 1)) . " = " . $v);
+                $build->sql($this->identifier(substr($k, 1)) . " = " . $v);
             }
             else  {
-                $build->sql($this->quoteIdentifier($k) . " = " . $build->bind($v));
+                $build->sql($this->identifier($k) . " = " . $build->bind($v));
             }
         }
     }
@@ -241,7 +238,7 @@ class Aql
             $build->sql($first ? '' : ', ');
             $first = false;
             $column = $column[0] === '|' ? substr($column, 1) : $column;
-            $build->sql($this->quoteIdentifier($column));
+            $build->sql($this->identifier($column));
         }
 
         $build->sql(') VALUES (');
@@ -272,7 +269,7 @@ class Aql
             $build->sql($first ? '' : ', ');
             $first = false;
             $column = $column[0] === '|' ? substr($column, 1) : $column;
-            $build->sql($this->quoteIdentifier($column));
+            $build->sql($this->identifier($column));
         }
 
         $build->sql(') VALUES');
@@ -318,7 +315,7 @@ class Aql
 
             // key and comparison
             [$key, $comparison] = array_pad(preg_split('/[:\s]/', $key, 2), 2, null);
-            $key = $key[0] === '|' ? substr($key, 1) : $this->quoteIdentifier($key);
+            $key = $key[0] === '|' ? substr($key, 1) : $this->identifier($key);
             $comparison = $comparison !== null ? $comparison : '=';
 
             // comparison alias
@@ -360,12 +357,8 @@ class Aql
         }
     }
 
-    public function quoteIdentifier(string $identifier): string
+    protected function identifier(string $identifier): string
     {
-        if (!$this->platform instanceof Platform) {
-            throw new Exception();
-        }
-
         return $this->platform->quoteIdentifier($identifier);
     }
 }

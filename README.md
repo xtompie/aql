@@ -26,8 +26,12 @@ Building SQL prepared statment with binds using array
 
 ```php
 use Xtompie\Aql\Aql;
+use Xtompie\Aql\MySQLPlatform;
 
-$result = (new Aql)([
+$aql = new Aql(
+    platform: new MySQLPlatform(),
+);
+$result = $aql([
     'select' => '*',
     'from' => 'order',
     'where' => [
@@ -59,13 +63,13 @@ composer require xtompie/aql
 #### Select
 
 ```php
-(new Aql)(['select' => 'post_id', 'title' => 'post_title'])->toArray();
+$aql(['select' => 'post_id', 'title' => 'post_title'])->toArray();
 // ["SELECT post_id, post_title as 'title'", []];
 
-(new Aql)(['select' => 'post_id, post_title as title'])->toArray();
+$aql(['select' => 'post_id, post_title as title'])->toArray();
 // ['SELECT post_id, post_title as title', []];
 
-(new Aql)(['select' => '|x' => '|COUNT(*)'])->toArray();
+$aql(['select' => '|x' => '|COUNT(*)'])->toArray();
 // ['SELECT COUNT(*) as x', []];
 ```
 
@@ -74,20 +78,20 @@ The `|` character can be specified at the beginning of key or value to use the r
 #### Prefix
 
 ```php
-(new Aql)(['prefix' => 'SQL_NO_CACHE DISTINCT'])->toArray();
+$aql(['prefix' => 'SQL_NO_CACHE DISTINCT'])->toArray();
 // ['SELECT SQL_NO_CACHE DISTINCT', []];
 ```
 
 #### From
 
 ```php
-(new Aql)(['from' => 'user'])->toArray();
+$aql(['from' => 'user'])->toArray();
 // ['FROM user', []];
 
-(new Aql)(['from' => ['u' => 'user']])->toArray();
+$aql(['from' => ['u' => 'user']])->toArray();
 // ['FROM user as u', []];
 
-(new Aql)(['from' => 'order'])->toArray();
+$aql(['from' => 'order'])->toArray();
 // ['FROM `order`', []];
 ```
 
@@ -96,7 +100,7 @@ Keywords are quoted.
 #### Join
 
 ```php
-(new Aql)([
+$aql([
     'join' => [
         'JOIN author ON (author_id = post_id_author)',
         'LEFT JOIN img ON (author_id_img = img_id)'
@@ -108,17 +112,17 @@ Keywords are quoted.
 #### Group
 
 ```php
-(new Aql)(['group' => 'post_id'])->toArray();
+$aql(['group' => 'post_id'])->toArray();
 // ['GROUP post_id', []];
 ```
 
 #### Having
 
 ```php
-(new Aql)(['having' => 'post_id > 0'])->toArray();
+$aql(['having' => 'post_id > 0'])->toArray();
 // ['HAVING post_id > 0', []];
 
-(new Aql)(['having' => ['post_id >' => '0']])->toArray();
+$aql(['having' => ['post_id >' => '0']])->toArray();
 // ['HAVING post_id > ?', [0]];
 ```
 
@@ -129,7 +133,7 @@ See [Where](#where).
 #### Order
 
 ```php
-(new Aql)(['order' => 'created_at DESC'])->toArray();
+$aql(['order' => 'created_at DESC'])->toArray();
 // ['ORDER BY created_at DESC', []];
 ```
 
@@ -138,7 +142,7 @@ Order is a raw sql fragment.
 #### Limit
 
 ```php
-(new Aql)(['limit' => '10'])->toArray();
+$aql(['limit' => '10'])->toArray();
 // ['LIMIT ?', [10]];
 ```
 
@@ -147,7 +151,7 @@ Limit is casted to int.
 #### Offset
 
 ```php
-(new Aql)(['offset' => '20'])->toArray();
+$aql(['offset' => '20'])->toArray();
 // ['OFFSET ?', [20]];
 ```
 
@@ -158,7 +162,7 @@ Offset is casted to int.
 ##### String key
 
 ```php
-(new Aql)([
+$aql([
     'where' => [
         'a' => 'a',
         'b' => ['b1', 'b2', 'b3'],
@@ -198,7 +202,7 @@ By default logical operator for all condition is `AND`.
 Logical operator can by change using `:operator` key.
 
 ```php
-(new Aql)([
+$aql([
     'where' => [
         'a' => 'a',
         'b' => 'b',
@@ -216,14 +220,14 @@ Logical operator can by change using `:operator` key.
 ##### Int key and string value
 
 ```php
-(new Aql)(['where' => ['category_id IS NOT NULL']])->toArray();
+$aql(['where' => ['category_id IS NOT NULL']])->toArray();
 // ['WHERE category_id IS NOT NULL', []];
 ```
 
 ##### Int key and array value
 
 ```php
-(new Aql)([
+$aql([
     'where' => [
         'a' => 'aa',
         [
@@ -239,7 +243,7 @@ Logical operator can by change using `:operator` key.
 #### Insert
 
 ```php
-(new Aql)([
+$aql([
     'insert' => 'order',
     'values' => [
         'order' => 1,
@@ -251,9 +255,11 @@ Logical operator can by change using `:operator` key.
 
 ### Platform
 
-Build in supported platforms: `MySQL/MariaDB` , `PostgreSQL`.
+Build in supported platforms:
 
-Default platform is set to `MySQL/MariaDB`.
+- `Xtompie/Aql/MySQLPlatform`,
+- `Xtompie/Aql/PostgreSQLPlatform`.
+- `Xtompie/Aql/SQLitePlatform`.
 
 Using `PostgreSQL`:
 
@@ -267,8 +273,6 @@ use Xtompie/Aql/PostgreSQLPlatform;
 ])->toArray();
 // ['SELECT * FROM "order"', []];
 ```
-
-If u want user other platform just pass it into constructor  `Xtompie\Aql\Aql::__construct(Xtompie\Aql\Platform $platform)`
 
 ### Extending
 
