@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 5.1.0
+
+- Add `match` comparison operator that maps to `like` and then `value` maps to `%value%`
+
 ## 5.0.0
 
 - Simplified dependecies, no default platform

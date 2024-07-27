@@ -305,7 +305,6 @@ class Aql
                     $build->sql('(');
                     $this->condition($value, $build);
                     $build->sql(')');
-
                 }
                 else {
                     throw new Exception();
@@ -313,13 +312,13 @@ class Aql
                 continue;
             }
 
-            // key and comparison
-            [$key, $comparison] = array_pad(preg_split('/[:\s]/', $key, 2), 2, null);
+            // key and comparison operator abstract
+            [$key, $coa] = array_pad(preg_split('/[:\s]/', $key, 2), 2, null);
             $key = $key[0] === '|' ? substr($key, 1) : $this->identifier($key);
-            $comparison = $comparison !== null ? $comparison : '=';
+            $coa = $coa !== null ? $coa : '=';
 
-            // comparison alias
-            $comparison = match($comparison) {
+            // comparison operator sql
+            $cos = match($coa) {
                 'eq' => '=',
                 'gt' => '>',
                 'ge' => '>=',
@@ -328,28 +327,34 @@ class Aql
                 'not' => '!=',
                 'neq' => '!=',
                 'like' => 'LIKE',
+                'match' => 'LIKE',
                 'in' => 'IN',
                 'notin' => 'NOT IN',
                 'between' => 'BETWEEN',
                 'notbetween' => 'NOT BETWEEN',
-                default => $comparison,
+                default => $coa,
             };
 
-            if ($comparison === '=' && is_array($value)) {
-                $comparison = 'IN';
+            if ($cos === '=' && is_array($value)) {
+                $cos = 'IN';
             }
 
-            $build->sql("$key $comparison ");
-            if ($comparison === 'BETWEEN' || $comparison === 'NOT BETWEEN') {
+            $build->sql("$key $cos ");
+            if ($cos === 'BETWEEN' || $cos === 'NOT BETWEEN') {
                 $build->sql($build->bind($value[0]) . ' AND ' . $build->bind($value[1]));
             }
-            else if ($comparison === 'IN' || $comparison === 'NOT IN') {
+            else if ($cos === 'IN' || $cos === 'NOT IN') {
                 $build->sql('(');
                 foreach (array_values($value) as $k => $v) {
                     $build->sql($k === 0 ? '' : ',');
                     $build->sql($build->bind($v));
                 }
                 $build->sql(')');
+            }
+            else if ($coa === 'match') {
+                $value = '%' . str_replace([ '|', '%', '_'], ['||', '|%', '|_'], $value) . '%';
+                $build->sql($build->bind($value));
+                $build->sql(" ESCAPE '|'");
             }
             else {
                 $build->sql($build->bind($value));

@@ -414,4 +414,14 @@ class AqlTest extends TestCase
             [1],
         );
     }
+
+    public function test_match()
+    {
+        $this->aql(
+            ['where' => ['id:match' => 'a%a_a|a']],
+            "WHERE id LIKE ? ESCAPE '|'",
+            ['%a|%a|_a||a%'],
+        );
+    }
+
 }
