@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 5.1.1
+
+- Add keyword `system` to `MySQLPlatform`
+
 ## 5.1.0
 
 - Add `match` comparison operator that maps to `like` and then `value` maps to `%value%`

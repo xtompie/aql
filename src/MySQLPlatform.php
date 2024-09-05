@@ -246,6 +246,7 @@ class MySQLPlatform implements Platform
             'STARTING',
             'STORED',
             'STRAIGHT_JOIN',
+            'SYSTEM',
             'TABLE',
             'TERMINATED',
             'THEN',

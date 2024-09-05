@@ -424,4 +424,17 @@ class AqlTest extends TestCase
         );
     }
 
+    public function test_keyword_system()
+    {
+        $this->aql(
+            [
+                'insert' => 'mytable',
+                'values' => [
+                    'system' => 1,
+                ]
+            ],
+            "INSERT INTO mytable (`system`) VALUES (?)",
+            [1],
+        );
+    }
 }
